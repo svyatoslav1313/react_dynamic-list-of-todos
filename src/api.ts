@@ -13,14 +13,18 @@ function wait(delay: number): Promise<void> {
   });
 }
 
-function get<T>(url: string): Promise<T> {
-  // eslint-disable-next-line prefer-template
+function get<T>(url: string, options?: { signal?: AbortSignal }): Promise<T> {
   const fullURL = BASE_URL + url + '.json';
 
-  // we add some delay to see how the loader works
   return wait(300)
-    .then(() => fetch(fullURL))
-    .then(res => res.json());
+    .then(() => fetch(fullURL, options))
+    .then(res => {
+      if (!res.ok) {
+        throw new Error('Network error');
+      }
+
+      return res.json();
+    });
 }
 
 export const getTodos = () => get<Todo[]>('/todos');

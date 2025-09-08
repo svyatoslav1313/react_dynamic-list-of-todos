@@ -18,11 +18,17 @@ export const TodoModal: React.FC<Props> = ({ todo, onClose }) => {
       return;
     }
 
+    const controller = new AbortController();
+
     setLoading(true);
-    getUser(todo.userId)
+    setUser(null);
+
+    getUser(todo.userId, { signal: controller.signal })
       .then(userFromServer => setUser(userFromServer))
       .catch(err => console.error('Error:', err))
       .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [todo]);
 
   if (!todo) {

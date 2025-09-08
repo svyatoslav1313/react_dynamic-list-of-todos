@@ -18,28 +18,32 @@ export const App: React.FC = () => {
   const [textFilter, setTextFilter] = useState('');
 
   useEffect(() => {
-    const loader =
-      filter === 'all'
-        ? getTodos
-        : filter === 'completed'
-          ? getCompletedTodos
-          : getActiveTodos;
+    setLoading(true);
 
-    loader()
-      .then(todos =>
-        todos.filter(todo =>
-          textFilter
-            ? todo.title.toLowerCase().includes(textFilter.toLowerCase())
-            : todo,
-        ),
-      )
-      .then(setTodos)
-      .catch(() => {
-        setTodos([]);
+    const controller = new AbortController();
+
+    getTodos()
+      .then(todos => {
+        let filtered = todos;
+
+        if (filter === 'completed') {
+          filtered = todos.filter(t => t.completed);
+        }
+
+        if (filter === 'active') {
+          filtered = todos.filter(t => !t.completed);
+        }
+
+        if (textFilter) {
+          filtered = filtered.filter(t => t.title.toLowerCase().includes(textFilter.toLowerCase()));
+        }
+
+        setTodos(filtered);
       })
-      .finally(() => {
-        setLoading(false);
-      });
+      .catch(() => setTodos([]))
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
   }, [filter, textFilter]);
 
   const handleSelectTodo = (todo: Todo) => {
@@ -68,7 +72,7 @@ export const App: React.FC = () => {
               {loading ? (
                 <Loader />
               ) : (
-                <TodoList todos={todos} onSelect={handleSelectTodo} />
+                <TodoList todos={todos} onSelect={handleSelectTodo} selectTodoId={selectTodo?.id} />
               )}
             </div>
           </div>
