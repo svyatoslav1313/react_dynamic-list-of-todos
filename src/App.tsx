@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import 'bulma/css/bulma.css';
 import '@fortawesome/fontawesome-free/css/all.css';
 
@@ -8,7 +8,7 @@ import { TodoFilter } from './components/TodoFilter';
 import { TodoModal } from './components/TodoModal';
 import { Loader } from './components/Loader';
 import { Todo } from './types/Todo';
-import { getActiveTodos, getCompletedTodos, getTodos } from './api';
+import { getTodos } from './api';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -22,29 +22,37 @@ export const App: React.FC = () => {
 
     const controller = new AbortController();
 
-    getTodos()
-      .then(todos => {
-        let filtered = todos;
-
-        if (filter === 'completed') {
-          filtered = todos.filter(t => t.completed);
+    getTodos({ signal: controller.signal })
+      .then(setTodos)
+      .catch(error => {
+        if (error.name !== 'AbortError') {
+          setTodos([]);
         }
-
-        if (filter === 'active') {
-          filtered = todos.filter(t => !t.completed);
-        }
-
-        if (textFilter) {
-          filtered = filtered.filter(t => t.title.toLowerCase().includes(textFilter.toLowerCase()));
-        }
-
-        setTodos(filtered);
       })
-      .catch(() => setTodos([]))
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, [filter, textFilter]);
+  }, []);
+
+  const visibleTodos = useMemo(() => {
+    let filtered = todos;
+
+    if (filter === 'completed') {
+      filtered = filtered.filter(todo => todo.completed);
+    }
+
+    if (filter === 'active') {
+      filtered = filtered.filter(todo => !todo.completed);
+    }
+
+    if (textFilter) {
+      filtered = filtered.filter(todo =>
+        todo.title.toLowerCase().includes(textFilter.toLowerCase()),
+      );
+    }
+
+    return filtered;
+  }, [todos, filter, textFilter]);
 
   const handleSelectTodo = (todo: Todo) => {
     setSelectTodo(todo);
@@ -72,7 +80,11 @@ export const App: React.FC = () => {
               {loading ? (
                 <Loader />
               ) : (
-                <TodoList todos={todos} onSelect={handleSelectTodo} selectTodoId={selectTodo?.id} />
+                <TodoList
+                  todos={visibleTodos}
+                  onSelect={handleSelectTodo}
+                  selectTodoId={selectTodo?.id}
+                />
               )}
             </div>
           </div>

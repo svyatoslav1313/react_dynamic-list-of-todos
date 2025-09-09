@@ -27,14 +27,8 @@ function get<T>(url: string, options?: { signal?: AbortSignal }): Promise<T> {
     });
 }
 
-export const getTodos = () => get<Todo[]>('/todos');
+export const getTodos = (options?: RequestOptions) =>
+  get<Todo[]>('/todos', options);
 
-export const getUser = (userId: number) => get<User>(`/users/${userId}`);
-
-export const getCompletedTodos = () => {
-  return getTodos().then(todos => todos.filter(todo => todo.completed));
-};
-
-export const getActiveTodos = () => {
-  return getTodos().then(todos => todos.filter(todo => !todo.completed));
-};
+export const getUser = (userId: number, options?: RequestOptions) =>
+  get<User>(`/users/${userId}`, options);
